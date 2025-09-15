@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: localstack-init
+  namespace: localstack
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: aws-cli
+        image: amazon/aws-cli:latest
+        command: ["/bin/bash", "/scripts/init-aws.sh"]
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          value: "test"
+        - name: AWS_SECRET_ACCESS_KEY
+          value: "test"
+        - name: AWS_DEFAULT_REGION
+          value: "us-east-1"
+        volumeMounts:
+        - name: init-scripts
+          mountPath: /scripts
+        - name: aws-config
+          mountPath: /root/.aws
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: localstack-config
+          defaultMode: 0755
+      - name: aws-config
+        configMap:
+          name: localstack-config
+          items:
+          - key: aws-config
+            path: config
+          - key: aws-credentials
+            path: credentials

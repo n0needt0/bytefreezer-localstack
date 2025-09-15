@@ -1,0 +1,55 @@
+# Development environment values for LocalStack
+# Optimized for local development with minimal resources
+
+# LocalStack configuration - reduced resources for dev
+localstack:
+  image:
+    tag: "latest"
+  env:
+    services: "s3,sqs,sns,dynamodb,lambda,iam"  # Reduced service set for dev
+    debug: "1"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Smaller persistence for dev
+persistence:
+  size: 5Gi
+
+# Services - only internal and development LoadBalancer
+service:
+  internal:
+    enabled: true
+  external:
+    enabled: false  # Disable production LoadBalancer in dev
+  development:
+    enabled: true
+
+# MetalLB - smaller IP range for dev
+metallb:
+  addressPool:
+    addresses:
+      - "192.168.1.245-192.168.1.247"  # Smaller range
+
+# Simplified initialization for dev
+initJob:
+  resources:
+    s3Buckets:
+      - "dev-data"
+      - "dev-config"
+    sqsQueues:
+      - "dev-events"
+    snsTopics:
+      - "dev-alerts"
+
+# Disable production features
+podDisruptionBudget:
+  enabled: false
+autoscaling:
+  enabled: false
+serviceMonitor:
+  enabled: false

@@ -1,0 +1,49 @@
+# Shared LocalStack configuration for DevSpace
+version: v2beta1
+
+deployments:
+  localstack:
+    helm:
+      chart:
+        path: ../helm-chart/localstack
+      valuesFiles:
+      - ../helm-chart/localstack/values-dev.yaml
+      values:
+        # Override for DevSpace integration
+        service:
+          internal:
+            enabled: true
+          external:
+            enabled: false  # Disable external LB in dev
+          development:
+            enabled: true
+            
+        # Enhanced development features
+        localstack:
+          env:
+            services: "s3,sqs,sns,dynamodb,lambda,iam,secretsmanager"
+            debug: "1"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+              
+        # Development-optimized initialization
+        initJob:
+          enabled: true
+          resources:
+            s3Buckets:
+            - "bytefreezer-dev-data"
+            - "bytefreezer-dev-config"
+            - "bytefreezer-dev-logs"
+            - "bytefreezer-test-data"
+            sqsQueues:
+            - "bytefreezer-dev-events"
+            - "bytefreezer-dev-processing"
+            - "bytefreezer-test-queue"
+            snsTopics:
+            - "bytefreezer-dev-alerts"
+            - "bytefreezer-test-notifications"

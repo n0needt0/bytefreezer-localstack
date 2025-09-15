@@ -1,0 +1,91 @@
+# Production environment values for LocalStack
+# Optimized for production-like testing with full resources
+
+# LocalStack configuration - full resources for production testing
+localstack:
+  image:
+    tag: "3.0.2"  # Pin to specific version for stability
+  env:
+    services: "s3,sqs,sns,dynamodb,lambda,cloudformation,iam,secretsmanager,ssm,kinesis,apigateway"
+    debug: "0"  # Disable debug in production
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+# Larger persistence for production
+persistence:
+  size: 50Gi
+  storageClassName: "fast-ssd"  # Use faster storage class if available
+
+# All services enabled
+service:
+  internal:
+    enabled: true
+  external:
+    enabled: true
+  development:
+    enabled: true
+
+# MetalLB - larger IP range for production
+metallb:
+  addressPool:
+    addresses:
+      - "192.168.1.240-192.168.1.249"
+  l2Advertisement:
+    interfaces:
+      - "eth0"
+
+# Full ByteFreezer resource initialization
+initJob:
+  enabled: true
+  resources:
+    s3Buckets:
+      - "bytefreezer-data"
+      - "bytefreezer-config"
+      - "bytefreezer-logs"
+      - "bytefreezer-artifacts"
+      - "bytefreezer-backups"
+      - "bytefreezer-reports"
+    sqsQueues:
+      - "bytefreezer-events"
+      - "bytefreezer-dlq"
+      - "bytefreezer-processing"
+      - "bytefreezer-analytics"
+    snsTopics:
+      - "bytefreezer-alerts"
+      - "bytefreezer-notifications"
+      - "bytefreezer-webhooks"
+
+# Production features
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+autoscaling:
+  enabled: false  # Keep disabled for LocalStack (single instance)
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+
+# Security context for production
+securityContext:
+  enabled: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Node selector for dedicated nodes (if available)
+nodeSelector:
+  # node-type: "localstack"
+
+# Tolerations for dedicated nodes (if using taints)
+tolerations: []
+  # - key: "localstack"
+  #   operator: "Equal"
+  #   value: "true"
+  #   effect: "NoSchedule"

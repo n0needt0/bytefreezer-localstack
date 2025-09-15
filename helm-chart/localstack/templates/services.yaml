@@ -1,0 +1,96 @@
+{{- if .Values.service.internal.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "localstack.fullname" . }}-internal
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "localstack.labels" . | nindent 4 }}
+    tier: internal
+  {{- with .Values.service.internal.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.internal.type }}
+  ports:
+  - name: edge
+    port: {{ .Values.service.internal.ports.edge }}
+    targetPort: 4566
+    protocol: TCP
+  - name: admin
+    port: {{ .Values.service.internal.ports.admin }}
+    targetPort: 4510
+    protocol: TCP
+  selector:
+    {{- include "localstack.selectorLabels" . | nindent 4 }}
+{{- end }}
+
+{{- if .Values.service.external.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "localstack.fullname" . }}-external
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "localstack.labels" . | nindent 4 }}
+    {{- with .Values.service.external.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.service.external.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.external.type }}
+  {{- if .Values.service.external.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.external.loadBalancerIP }}
+  {{- end }}
+  ports:
+  - name: edge
+    port: {{ .Values.service.external.ports.edge }}
+    targetPort: 4566
+    protocol: TCP
+  - name: admin
+    port: {{ .Values.service.external.ports.admin }}
+    targetPort: 4510
+    protocol: TCP
+  selector:
+    {{- include "localstack.selectorLabels" . | nindent 4 }}
+{{- end }}
+
+{{- if .Values.service.development.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "localstack.fullname" . }}-dev
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "localstack.labels" . | nindent 4 }}
+    {{- with .Values.service.development.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.service.development.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.development.type }}
+  {{- if .Values.service.development.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.development.loadBalancerIP }}
+  {{- end }}
+  ports:
+  - name: edge-dev
+    port: {{ .Values.service.development.ports.edge }}
+    targetPort: 4566
+    protocol: TCP
+  - name: admin-dev
+    port: {{ .Values.service.development.ports.admin }}
+    targetPort: 4510
+    protocol: TCP
+  selector:
+    {{- include "localstack.selectorLabels" . | nindent 4 }}
+{{- end }}

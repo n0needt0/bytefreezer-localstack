@@ -1,0 +1,31 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: localstack-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.1.240-192.168.1.249  # Adjust this range to match your network
+  autoAssign: true
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: localstack-l2-adv
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - localstack-pool
+  interfaces:
+  - eth0  # Adjust to your network interface
+---
+# Alternative configuration for BGP mode (uncomment if using BGP)
+# apiVersion: metallb.io/v1beta2
+# kind: BGPPeer
+# metadata:
+#   name: localstack-bgp-peer
+#   namespace: metallb-system
+# spec:
+#   myASN: 64512
+#   peerASN: 64512
+#   peerAddress: 192.168.1.1  # Your router IP

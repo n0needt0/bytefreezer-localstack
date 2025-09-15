@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "localstack.configMapName" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "localstack.labels" . | nindent 4 }}
+data:
+  init-aws.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Waiting for LocalStack to be ready..."
+    while ! curl -s http://{{ include "localstack.fullname" . }}-internal.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.service.internal.ports.edge }}/_localstack/health > /dev/null; do
+      sleep 2
+    done
+    echo "LocalStack is ready!"
+    
+    {{- if .Values.initJob.resources.s3Buckets }}
+    # Create S3 buckets
+    {{- range .Values.initJob.resources.s3Buckets }}
+    aws --endpoint-url=http://{{ include "localstack.fullname" $ }}-internal.{{ $.Values.namespace.name }}.svc.cluster.local:{{ $.Values.service.internal.ports.edge }} s3 mb s3://{{ . }} || true
+    {{- end }}
+    {{- end }}
+    
+    {{- if .Values.initJob.resources.sqsQueues }}
+    # Create SQS queues
+    {{- range .Values.initJob.resources.sqsQueues }}
+    aws --endpoint-url=http://{{ include "localstack.fullname" $ }}-internal.{{ $.Values.namespace.name }}.svc.cluster.local:{{ $.Values.service.internal.ports.edge }} sqs create-queue --queue-name {{ . }} || true
+    {{- end }}
+    {{- end }}
+    
+    {{- if .Values.initJob.resources.snsTopics }}
+    # Create SNS topics
+    {{- range .Values.initJob.resources.snsTopics }}
+    aws --endpoint-url=http://{{ include "localstack.fullname" $ }}-internal.{{ $.Values.namespace.name }}.svc.cluster.local:{{ $.Values.service.internal.ports.edge }} sns create-topic --name {{ . }} || true
+    {{- end }}
+    {{- end }}
+    
+    echo "LocalStack initialization complete!"
+
+  aws-config: |
+    [default]
+    region = us-east-1
+    output = json
+
+  aws-credentials: |
+    [default]
+    aws_access_key_id = test
+    aws_secret_access_key = test

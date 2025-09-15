@@ -1,0 +1,90 @@
+# Istio Gateway for external access to ByteFreezer services
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: bytefreezer-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  # LocalStack access
+  - port:
+      number: 4566
+      name: localstack-api
+      protocol: HTTP
+    hosts:
+    - "localstack.dev.bytefreezer.local"
+    - "localstack-dev.local"
+    
+  - port:
+      number: 4510  
+      name: localstack-admin
+      protocol: HTTP
+    hosts:
+    - "localstack.dev.bytefreezer.local"
+    
+  # ByteFreezer Proxy access
+  - port:
+      number: 8080
+      name: proxy-api
+      protocol: HTTP
+    hosts:
+    - "proxy.dev.bytefreezer.local"
+    
+  # ByteFreezer Receiver access  
+  - port:
+      number: 3000
+      name: receiver-api
+      protocol: HTTP
+    hosts:
+    - "receiver.dev.bytefreezer.local"
+    
+  # ByteFreezer Piper access
+  - port:
+      number: 4000
+      name: piper-api
+      protocol: HTTP
+    hosts:
+    - "piper.dev.bytefreezer.local"
+    
+  # Observability tools
+  - port:
+      number: 20001
+      name: kiali
+      protocol: HTTP
+    hosts:
+    - "kiali.dev.bytefreezer.local"
+    
+  - port:
+      number: 16686
+      name: jaeger
+      protocol: HTTP
+    hosts:
+    - "jaeger.dev.bytefreezer.local"
+---
+# Gateway for production access (uses MetalLB LoadBalancer)
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: bytefreezer-production-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*.prod.bytefreezer.local"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: bytefreezer-tls-cert
+    hosts:
+    - "*.prod.bytefreezer.local"

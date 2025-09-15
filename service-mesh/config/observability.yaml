@@ -1,0 +1,119 @@
+# Observability configuration for the service mesh
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: observability-settings
+  namespace: istio-system
+spec:
+  values:
+    telemetry:
+      v2:
+        enabled: true
+    pilot:
+      traceSampling: 100.0  # 100% sampling for development
+  meshConfig:
+    defaultConfig:
+      proxyStatsMatcher:
+        inclusionRegexps:
+        - ".*outlier_detection.*"
+        - ".*circuit_breakers.*"
+        - ".*upstream_rq_retry.*"
+        - ".*upstream_rq_pending.*"
+        - ".*_cx_.*"
+    extensionProviders:
+    - name: jaeger
+      envoyOtelAls:
+        service: jaeger.istio-system.svc.cluster.local
+        port: 14250
+    - name: prometheus
+      prometheus: {}
+---
+# Telemetry configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: bytefreezer-metrics
+  namespace: bytefreezer-dev
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        bytefreezer_service:
+          value: "%{ENVIRONMENT_VARIABLE:SERVICE_NAME}"
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: bytefreezer-tracing
+  namespace: bytefreezer-dev
+spec:
+  tracing:
+  - providers:
+    - name: jaeger
+  - customTags:
+      bytefreezer_version:
+        header:
+          name: x-bytefreezer-version
+      user_id:
+        header:
+          name: x-user-id
+---
+# Service Monitor for Prometheus scraping
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istio-mesh-metrics
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      app: istiod
+  endpoints:
+  - port: http-monitoring
+    interval: 30s
+    path: /stats/prometheus
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: bytefreezer-services-metrics
+  namespace: bytefreezer-dev
+spec:
+  selector:
+    matchLabels:
+      app: bytefreezer-proxy
+  endpoints:
+  - port: http-metrics
+    interval: 15s
+    path: /metrics
+---
+# Kiali configuration for service mesh visualization
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kiali
+  namespace: istio-system
+data:
+  config.yaml: |
+    istio_namespace: istio-system
+    deployment:
+      accessible_namespaces:
+      - "**"
+      namespace: istio-system
+    external_services:
+      prometheus:
+        url: http://prometheus:9090
+      grafana:
+        enabled: true
+        in_cluster_url: http://grafana:3000
+        url: http://grafana:3000
+      jaeger:
+        enabled: true
+        in_cluster_url: http://jaeger:16686/jaeger
+        url: http://jaeger:16686/jaeger
+    server:
+      web_root: /kiali

@@ -1,0 +1,191 @@
+# Default values for LocalStack
+# This is a YAML-formatted file.
+
+# LocalStack configuration
+localstack:
+  image:
+    repository: localstack/localstack
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # LocalStack environment variables
+  env:
+    services: "s3,sqs,sns,dynamodb,lambda,cloudformation,iam,secretsmanager,ssm"
+    debug: "1"
+    persistence: "1"
+    skipInfraDownloads: "1"
+    dataDir: "/tmp/localstack/data"
+  
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  
+  # Probes configuration
+  livenessProbe:
+    httpGet:
+      path: /_localstack/health
+      port: 4566
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+  
+  readinessProbe:
+    httpGet:
+      path: /_localstack/health
+      port: 4566
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+# Persistence configuration
+persistence:
+  enabled: true
+  storageClassName: "local-path"
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  annotations: {}
+
+# Service configuration
+service:
+  # Internal ClusterIP service
+  internal:
+    enabled: true
+    type: ClusterIP
+    ports:
+      edge: 4566
+      admin: 4510
+    annotations: {}
+  
+  # External LoadBalancer service (production)
+  external:
+    enabled: true
+    type: LoadBalancer
+    ports:
+      edge: 4566
+      admin: 4510
+    annotations:
+      metallb.universe.tf/address-pool: "localstack-pool"
+      metallb.universe.tf/allow-shared-ip: "localstack-external"
+    loadBalancerIP: ""
+    labels:
+      tier: external
+  
+  # Development LoadBalancer service
+  development:
+    enabled: true
+    type: LoadBalancer
+    ports:
+      edge: 4567
+      admin: 4511
+    annotations:
+      metallb.universe.tf/address-pool: "localstack-pool"
+      metallb.universe.tf/allow-shared-ip: "localstack-dev"
+    loadBalancerIP: ""
+    labels:
+      tier: development
+
+# MetalLB configuration
+metallb:
+  enabled: true
+  install: true  # Auto-install MetalLB if not present
+  
+  # IP address pool configuration
+  addressPool:
+    name: "localstack-pool"
+    addresses:
+      - "192.168.1.240-192.168.1.249"  # Change this to match your network
+    autoAssign: true
+  
+  # L2 advertisement configuration  
+  l2Advertisement:
+    enabled: true
+    interfaces:
+      - "eth0"  # Change this to match your network interface
+  
+  # BGP configuration (disabled by default)
+  bgp:
+    enabled: false
+    myASN: 64512
+    peerASN: 64512
+    peerAddress: "192.168.1.1"
+
+# Initialization job configuration
+initJob:
+  enabled: true
+  image:
+    repository: amazon/aws-cli
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # AWS resources to create
+  resources:
+    s3Buckets:
+      - "bytefreezer-data"
+      - "bytefreezer-config" 
+      - "bytefreezer-logs"
+      - "bytefreezer-artifacts"
+    
+    sqsQueues:
+      - "bytefreezer-events"
+      - "bytefreezer-dlq"
+      - "bytefreezer-processing"
+    
+    snsTopics:
+      - "bytefreezer-alerts"
+      - "bytefreezer-notifications"
+
+# Namespace configuration
+namespace:
+  create: true
+  name: "localstack"
+  labels:
+    name: "localstack"
+    app: "localstack"
+
+# Security context
+securityContext:
+  enabled: false
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Node selector, tolerations and affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Additional labels and annotations
+labels: {}
+annotations: {}
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# ServiceMonitor for Prometheus (if using Prometheus Operator)
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+  annotations: {}
+
+# Configuration for mounting docker socket (if needed)
+dockerSocket:
+  enabled: true
+  hostPath: /var/run/docker.sock

@@ -1,0 +1,11 @@
+apiVersion: v2
+name: bytefreezer-services
+description: ByteFreezer microservices for development with LocalStack
+type: application
+version: 0.1.0
+appVersion: "dev"
+dependencies:
+- name: localstack
+  version: "0.1.0"
+  repository: "file://../../../helm-chart/localstack"
+  condition: localstack.enabled

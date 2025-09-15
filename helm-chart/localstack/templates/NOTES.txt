@@ -1,0 +1,78 @@
+🎉 LocalStack has been deployed successfully!
+
+{{- if .Values.service.internal.enabled }}
+
+📋 Internal Access (from within cluster):
+  Service: {{ include "localstack.fullname" . }}-internal
+  Endpoint: http://{{ include "localstack.fullname" . }}-internal.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.service.internal.ports.edge }}
+  Admin UI: http://{{ include "localstack.fullname" . }}-internal.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.service.internal.ports.admin }}
+
+🔧 Environment Variables for Kubernetes services:
+  AWS_ENDPOINT_URL=http://{{ include "localstack.fullname" . }}-internal.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.service.internal.ports.edge }}
+  AWS_ACCESS_KEY_ID=test
+  AWS_SECRET_ACCESS_KEY=test
+  AWS_DEFAULT_REGION=us-east-1
+{{- end }}
+
+{{- if .Values.service.external.enabled }}
+
+🌍 External Access (LoadBalancer):
+  Get external IP: kubectl get svc {{ include "localstack.fullname" . }}-external -n {{ .Values.namespace.name }}
+  
+  Once IP is assigned:
+  Endpoint: http://[EXTERNAL_IP]:{{ .Values.service.external.ports.edge }}
+  Admin UI: http://[EXTERNAL_IP]:{{ .Values.service.external.ports.admin }}
+{{- end }}
+
+{{- if .Values.service.development.enabled }}
+
+🛠️ Development Access (LoadBalancer):
+  Get development IP: kubectl get svc {{ include "localstack.fullname" . }}-dev -n {{ .Values.namespace.name }}
+  
+  Once IP is assigned:
+  Endpoint: http://[DEV_IP]:{{ .Values.service.development.ports.edge }}
+  Admin UI: http://[DEV_IP]:{{ .Values.service.development.ports.admin }}
+{{- end }}
+
+{{- if .Values.initJob.enabled }}
+
+🎯 Pre-created AWS resources:
+{{- if .Values.initJob.resources.s3Buckets }}
+  S3 Buckets: {{ join ", " .Values.initJob.resources.s3Buckets }}
+{{- end }}
+{{- if .Values.initJob.resources.sqsQueues }}
+  SQS Queues: {{ join ", " .Values.initJob.resources.sqsQueues }}
+{{- end }}
+{{- if .Values.initJob.resources.snsTopics }}
+  SNS Topics: {{ join ", " .Values.initJob.resources.snsTopics }}
+{{- end }}
+{{- end }}
+
+🧪 Quick test from within cluster:
+  kubectl run aws-cli --rm -i --tty --image=amazon/aws-cli:latest -n {{ .Values.namespace.name }} -- /bin/bash
+  
+  # Inside the pod:
+  export AWS_ENDPOINT_URL=http://{{ include "localstack.fullname" . }}-internal.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.service.internal.ports.edge }}
+  export AWS_ACCESS_KEY_ID=test
+  export AWS_SECRET_ACCESS_KEY=test
+  export AWS_DEFAULT_REGION=us-east-1
+  aws s3 ls
+
+📊 Check status:
+  kubectl get all -n {{ .Values.namespace.name }}
+  
+🔍 View logs:
+  kubectl logs -f deployment/{{ include "localstack.fullname" . }} -n {{ .Values.namespace.name }}
+
+{{- if .Values.metallb.enabled }}
+
+🌐 MetalLB Configuration:
+  Address Pool: {{ .Values.metallb.addressPool.addresses | join ", " }}
+  {{- if .Values.metallb.l2Advertisement.enabled }}
+  Interfaces: {{ .Values.metallb.l2Advertisement.interfaces | join ", " }}
+  {{- end }}
+  
+  💡 If LoadBalancer IPs are pending, check MetalLB status:
+    kubectl get pods -n metallb-system
+    kubectl get ipaddresspools -n metallb-system
+{{- end }}

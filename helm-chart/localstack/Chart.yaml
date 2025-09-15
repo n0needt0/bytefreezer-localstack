@@ -1,0 +1,21 @@
+apiVersion: v2
+name: localstack
+description: A Helm chart for LocalStack AWS services emulator with MetalLB integration
+type: application
+version: 0.1.0
+appVersion: "3.0.2"
+home: https://github.com/localstack/localstack
+sources:
+  - https://github.com/localstack/localstack
+keywords:
+  - aws
+  - localstack
+  - development
+  - testing
+  - metallb
+maintainers:
+  - name: ByteFreezer Team
+    email: dev@bytefreezer.com
+annotations:
+  category: Development Tools
+  licenses: Apache-2.0

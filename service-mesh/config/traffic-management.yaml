@@ -1,0 +1,134 @@
+# Advanced traffic management for ByteFreezer services
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: bytefreezer-canary-deployment
+  namespace: bytefreezer-dev
+spec:
+  hosts:
+  - bytefreezer-proxy.bytefreezer-dev.svc.cluster.local
+  http:
+  # Canary deployment: Route 10% of traffic to v2, 90% to v1
+  - match:
+    - headers:
+        x-canary:
+          exact: "true"
+    route:
+    - destination:
+        host: bytefreezer-proxy.bytefreezer-dev.svc.cluster.local
+        subset: v2
+  - route:
+    - destination:
+        host: bytefreezer-proxy.bytefreezer-dev.svc.cluster.local
+        subset: v1
+      weight: 90
+    - destination:
+        host: bytefreezer-proxy.bytefreezer-dev.svc.cluster.local
+        subset: v2
+      weight: 10
+---
+# Fault injection for chaos testing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: bytefreezer-fault-injection
+  namespace: bytefreezer-dev
+spec:
+  hosts:
+  - bytefreezer-receiver.bytefreezer-dev.svc.cluster.local
+  http:
+  - match:
+    - headers:
+        x-chaos-test:
+          exact: "true"
+    fault:
+      delay:
+        percentage:
+          value: 50.0
+        fixedDelay: 2s
+      abort:
+        percentage:
+          value: 10.0
+        httpStatus: 503
+    route:
+    - destination:
+        host: bytefreezer-receiver.bytefreezer-dev.svc.cluster.local
+  - route:
+    - destination:
+        host: bytefreezer-receiver.bytefreezer-dev.svc.cluster.local
+---
+# Circuit breaker configuration
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: bytefreezer-circuit-breaker
+  namespace: bytefreezer-dev
+spec:
+  host: localstack-internal.localstack.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 10
+      http:
+        http1MaxPendingRequests: 5
+        maxRequestsPerConnection: 2
+    outlierDetection:
+      consecutiveErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+# Rate limiting
+apiVersion: networking.istio.io/v1beta1
+kind: EnvoyFilter
+metadata:
+  name: bytefreezer-rate-limit
+  namespace: bytefreezer-dev
+spec:
+  workloadSelector:
+    labels:
+      app: bytefreezer-proxy
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+          type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          value:
+            stat_prefix: rate_limiter
+            token_bucket:
+              max_tokens: 100
+              tokens_per_fill: 100
+              fill_interval: 60s
+            filter_enabled:
+              runtime_key: rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+---
+# Load balancing with session affinity
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: bytefreezer-session-affinity
+  namespace: bytefreezer-dev
+spec:
+  host: bytefreezer-piper.bytefreezer-dev.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      consistentHash:
+        httpHeaderName: "x-user-id"

@@ -1,0 +1,129 @@
+version: v2beta1
+name: bytefreezer-dev
+
+# Import shared configurations
+imports:
+- path: ./localstack.yaml
+
+# Development configuration
+dev:
+  bytefreezer-proxy:
+    imageSelector: bytefreezer/proxy:dev
+    workingDir: /app
+    ports:
+    - port: "2056:2056"
+    - port: "2057:2057"  
+    - port: "8080:8080"  # API port
+    sync:
+    - path: ../bytefreezer-proxy:/app
+      excludePaths:
+      - .git/
+      - vendor/
+      - "*.log"
+    command: ["go"]
+    args: ["run", ".", "--config", "/app/config-dev.yaml"]
+    env:
+    - name: AWS_ENDPOINT_URL
+      value: "http://localstack-internal.localstack.svc.cluster.local:4566"
+    - name: AWS_ACCESS_KEY_ID
+      value: "test"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: "test"
+    - name: AWS_DEFAULT_REGION
+      value: "us-east-1"
+
+  bytefreezer-receiver:
+    imageSelector: bytefreezer/receiver:dev
+    workingDir: /app
+    ports:
+    - port: "3000:3000"
+    sync:
+    - path: ../bytefreezer-receiver:/app
+    env:
+    - name: AWS_ENDPOINT_URL
+      value: "http://localstack-internal.localstack.svc.cluster.local:4566"
+
+  bytefreezer-piper:
+    imageSelector: bytefreezer/piper:dev  
+    workingDir: /app
+    ports:
+    - port: "4000:4000"
+    sync:
+    - path: ../bytefreezer-piper:/app
+    env:
+    - name: AWS_ENDPOINT_URL
+      value: "http://localstack-internal.localstack.svc.cluster.local:4566"
+
+# Deployments
+deployments:
+  localstack:
+    helm:
+      chart:
+        path: ../helm-chart/localstack
+      valuesFiles:
+      - ../helm-chart/localstack/values-dev.yaml
+      values:
+        service:
+          development:
+            enabled: true
+        initJob:
+          resources:
+            s3Buckets:
+            - "dev-data"
+            - "dev-config"
+            - "dev-logs"
+            sqsQueues:
+            - "dev-events"
+            - "dev-dlq"
+            snsTopics:
+            - "dev-alerts"
+
+  bytefreezer-proxy:
+    kubectl:
+      manifests:
+      - manifests/proxy/
+    
+  bytefreezer-receiver:
+    kubectl:
+      manifests:
+      - manifests/receiver/
+
+  bytefreezer-piper:
+    kubectl:
+      manifests: 
+      - manifests/piper/
+
+# Development profiles
+profiles:
+- name: production
+  patches:
+  - op: replace
+    path: deployments.localstack.helm.valuesFiles
+    value:
+    - ../helm-chart/localstack/values-prod.yaml
+  - op: add
+    path: deployments.localstack.helm.values.metallb.addressPool.addresses
+    value:
+    - "192.168.1.240-192.168.1.249"
+
+- name: minimal
+  patches:
+  - op: remove
+    path: dev.bytefreezer-piper
+  - op: remove
+    path: deployments.bytefreezer-piper
+
+# Hooks for initialization
+hooks:
+- command: "./scripts/check-prerequisites.sh"
+  events: ["before:deploy"]
+- command: "./scripts/setup-aws-resources.sh"
+  events: ["after:deploy:localstack"]
+- command: "./scripts/run-integration-tests.sh"
+  events: ["after:deploy"]
+
+# Variables for different environments
+vars:
+  LOCALSTACK_NAMESPACE: "localstack"
+  DEV_NAMESPACE: "bytefreezer-dev"
+  AWS_REGION: "us-east-1"

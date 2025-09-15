@@ -1,0 +1,61 @@
+{{- if .Values.metallb.enabled }}
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: {{ include "localstack.metallbPoolName" . }}
+  namespace: metallb-system
+  labels:
+    {{- include "localstack.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+spec:
+  addresses:
+  {{- range .Values.metallb.addressPool.addresses }}
+  - {{ . }}
+  {{- end }}
+  autoAssign: {{ .Values.metallb.addressPool.autoAssign }}
+
+{{- if .Values.metallb.l2Advertisement.enabled }}
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: {{ include "localstack.fullname" . }}-l2-adv
+  namespace: metallb-system
+  labels:
+    {{- include "localstack.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+spec:
+  ipAddressPools:
+  - {{ include "localstack.metallbPoolName" . }}
+  {{- if .Values.metallb.l2Advertisement.interfaces }}
+  interfaces:
+  {{- range .Values.metallb.l2Advertisement.interfaces }}
+  - {{ . }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.metallb.bgp.enabled }}
+---
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: {{ include "localstack.fullname" . }}-bgp-peer
+  namespace: metallb-system
+  labels:
+    {{- include "localstack.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+spec:
+  myASN: {{ .Values.metallb.bgp.myASN }}
+  peerASN: {{ .Values.metallb.bgp.peerASN }}
+  peerAddress: {{ .Values.metallb.bgp.peerAddress }}
+{{- end }}
+
+{{- end }}

@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: localstack-internal
+  namespace: localstack
+  labels:
+    app: localstack
+spec:
+  type: ClusterIP
+  ports:
+  - name: edge
+    port: 4566
+    targetPort: 4566
+    protocol: TCP
+  - name: admin
+    port: 4510
+    targetPort: 4510
+    protocol: TCP
+  selector:
+    app: localstack
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: localstack-external
+  namespace: localstack
+  labels:
+    app: localstack
+    tier: external
+  annotations:
+    metallb.universe.tf/address-pool: localstack-pool
+    metallb.universe.tf/allow-shared-ip: "localstack-external"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: ""  # MetalLB will auto-assign from localstack-pool
+  ports:
+  - name: edge
+    port: 4566
+    targetPort: 4566
+    protocol: TCP
+  - name: admin
+    port: 4510
+    targetPort: 4510
+    protocol: TCP
+  selector:
+    app: localstack
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: localstack-dev
+  namespace: localstack
+  labels:
+    app: localstack
+    tier: development
+  annotations:
+    metallb.universe.tf/address-pool: localstack-pool
+    metallb.universe.tf/allow-shared-ip: "localstack-dev"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: ""  # MetalLB will auto-assign from localstack-pool
+  ports:
+  - name: edge-dev
+    port: 4567  # Different port for dev access
+    targetPort: 4566
+    protocol: TCP
+  - name: admin-dev
+    port: 4511  # Different port for dev admin
+    targetPort: 4510
+    protocol: TCP
+  selector:
+    app: localstack

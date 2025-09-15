@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "localstack.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "localstack.labels" . | nindent 4 }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "localstack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "localstack.selectorLabels" . | nindent 8 }}
+      {{- with .Values.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: localstack
+        image: {{ .Values.localstack.image.repository }}:{{ .Values.localstack.image.tag }}
+        imagePullPolicy: {{ .Values.localstack.image.pullPolicy }}
+        ports:
+        - containerPort: 4566
+          name: edge
+        - containerPort: 4510
+          name: admin
+        env:
+        {{- include "localstack.env" . | nindent 8 }}
+        volumeMounts:
+        {{- if .Values.persistence.enabled }}
+        - name: localstack-data
+          mountPath: {{ .Values.localstack.env.dataDir }}
+        {{- end }}
+        {{- if .Values.dockerSocket.enabled }}
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        {{- end }}
+        resources:
+          {{- toYaml .Values.localstack.resources | nindent 10 }}
+        {{- with .Values.localstack.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.localstack.readinessProbe }}
+        readinessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if .Values.securityContext.enabled }}
+        securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+          runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        {{- end }}
+      volumes:
+      {{- if .Values.persistence.enabled }}
+      - name: localstack-data
+        persistentVolumeClaim:
+          claimName: {{ include "localstack.pvcName" . }}
+      {{- end }}
+      {{- if .Values.dockerSocket.enabled }}
+      - name: docker-sock
+        hostPath:
+          path: {{ .Values.dockerSocket.hostPath }}
+          type: Socket
+      {{- end }}
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      {{- end }}
