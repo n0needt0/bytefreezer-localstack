@@ -25,22 +25,22 @@ spec:
           name: admin
         env:
         - name: SERVICES
-          value: "s3,sqs,sns,dynamodb,lambda,cloudformation,iam,secretsmanager,ssm"
+          value: "sns,dynamodb,lambda,cloudformation,iam,secretsmanager,ssm"
         - name: DEBUG
           value: "1"
         - name: PERSISTENCE
-          value: "1"
+          value: "0"
         - name: DOCKER_HOST
           value: "unix:///var/run/docker.sock"
         - name: DATA_DIR
-          value: "/tmp/localstack/data"
+          value: "/data"
         - name: HOSTNAME_EXTERNAL
           value: "localstack.localstack.svc.cluster.local"
         - name: SKIP_INFRA_DOWNLOADS
           value: "1"
         volumeMounts:
         - name: localstack-data
-          mountPath: /tmp/localstack/data
+          mountPath: /data
         - name: docker-sock
           mountPath: /var/run/docker.sock
         resources:
@@ -66,8 +66,7 @@ spec:
           timeoutSeconds: 3
       volumes:
       - name: localstack-data
-        persistentVolumeClaim:
-          claimName: localstack-data-pvc
+        emptyDir: {}
       - name: docker-sock
         hostPath:
           path: /var/run/docker.sock

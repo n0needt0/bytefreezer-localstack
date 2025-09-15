@@ -5,7 +5,7 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-  - 192.168.1.240-192.168.1.249  # Adjust this range to match your network
+  - 192.168.86.101-192.168.86.120  # Expanded range to avoid conflicts
   autoAssign: true
 ---
 apiVersion: metallb.io/v1beta1
