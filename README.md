@@ -1,6 +1,6 @@
 # LocalStack on K3s with MetalLB
 
-This directory contains Kubernetes manifests and scripts to deploy AWS LocalStack on your K3s cluster with MetalLB load balancer integration, providing shared AWS services for all ByteFreezer components in development with both internal cluster access and external network access.
+This directory contains Kubernetes manifests and scripts to deploy AWS LocalStack on K3s cluster with MetalLB load balancer integration, providing shared AWS services for all ByteFreezer components in development with both internal cluster access and external network access.
 
 ## 🎯 What This Provides
 

@@ -123,6 +123,24 @@ test_endpoint "http://$DEV_IP:$DEV_PORT/_localstack/health" "Dev health endpoint
 echo -e "\n${BLUE}5. Testing AWS Services${NC}"
 echo "------------------------"
 
+# Test S3 service
+echo -n "Testing S3 service... "
+if curl -s -w "%{http_code}" -o /dev/null "http://$EXTERNAL_IP:$EDGE_PORT/" | grep -q "200\|404"; then
+    echo -e "${GREEN}✅${NC}"
+else
+    echo -e "${RED}❌${NC}"
+fi
+
+# Test SQS service
+echo -n "Testing SQS service... "
+if curl -s -X GET "http://$EXTERNAL_IP:$EDGE_PORT/?Action=ListQueues&Version=2012-11-05" \
+    -H "Authorization: AWS4-HMAC-SHA256 Credential=test/20230101/us-east-1/sqs/aws4_request, SignedHeaders=host, Signature=test" \
+    | grep -q "ListQueuesResponse\|Error"; then
+    echo -e "${GREEN}✅${NC}"
+else
+    echo -e "${RED}❌${NC}"
+fi
+
 # Test DynamoDB service
 echo -n "Testing DynamoDB service... "
 if curl -s -X POST "http://$EXTERNAL_IP:$EDGE_PORT/" \
@@ -178,6 +196,10 @@ echo "export AWS_DEFAULT_REGION=us-east-1"
 echo "export AWS_ENDPOINT_URL=http://$EXTERNAL_IP:$EDGE_PORT"
 echo ""
 echo "Test commands:"
+echo "aws s3 ls"
+echo "aws s3 mb s3://my-bucket"
+echo "aws sqs list-queues"
+echo "aws sqs create-queue --queue-name my-queue"
 echo "aws dynamodb list-tables"
 echo "aws lambda list-functions"
 echo "aws secretsmanager list-secrets"
