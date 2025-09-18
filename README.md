@@ -1,6 +1,8 @@
-# LocalStack on K3s with MetalLB
+# ByteFreezer LocalStack (AWS Services)
 
-This directory contains Kubernetes manifests and scripts to deploy AWS LocalStack on K3s cluster with MetalLB load balancer integration, providing shared AWS services for all ByteFreezer components in development with both internal cluster access and external network access.
+AWS-compatible services using LocalStack on K3s cluster. This provides AWS service emulation for ByteFreezer applications.
+
+> **Note**: PostgreSQL has been moved to `../bytefreezer-postgres/` for better separation of concerns.
 
 ## 🎯 What This Provides
 

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bytefreezer-ui
+  labels:
+    app.kubernetes.io/name: bytefreezer-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: bytefreezer

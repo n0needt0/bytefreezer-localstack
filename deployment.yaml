@@ -25,7 +25,7 @@ spec:
           name: admin
         env:
         - name: SERVICES
-          value: "s3,sqs,sns,dynamodb,lambda,cloudformation,iam,secretsmanager,ssm"
+          value: "s3,sqs,sns,dynamodb,lambda,cloudformation,iam,secretsmanager,ssm,rds"
         - name: DEBUG
           value: "1"
         - name: PERSISTENCE

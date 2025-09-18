@@ -1,0 +1,143 @@
+---
+- name: Deploy ByteFreezer UI to k3s
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    # Default configuration
+    ui_version: "{{ ui_version | default('latest') }}"
+    ui_replicas: "{{ ui_replicas | default(2) }}"
+    container_registry: "{{ container_registry | default('docker.io/bytefreezer') }}"
+
+    # k3s cluster configuration
+    kubeconfig_path: "{{ kubeconfig_path | default('~/.kube/config') }}"
+
+    # ByteFreezer Control API connection
+    bytefreezer_control_service_ip: "{{ bytefreezer_control_service_ip | default('192.168.86.109') }}"
+    bytefreezer_receiver_service_ip: "{{ bytefreezer_receiver_service_ip | default('192.168.86.110') }}"
+    bytefreezer_piper_service_ip: "{{ bytefreezer_piper_service_ip | default('192.168.86.111') }}"
+    bytefreezer_packer_service_ip: "{{ bytefreezer_packer_service_ip | default('192.168.86.112') }}"
+
+    # UI external access via MetalLB
+    ui_external_ip: "{{ ui_external_ip | default('192.168.86.113') }}"
+    ui_hostname: "{{ ui_hostname | default('bytefreezer-ui.local') }}"
+
+    # Security
+    jwt_secret: "{{ jwt_secret | default('change-this-jwt-secret-' + ansible_date_time.epoch) }}"
+    nextauth_secret: "{{ nextauth_secret | default('change-this-nextauth-secret-' + ansible_date_time.epoch) }}"
+
+  pre_tasks:
+    - name: Check k3s cluster connectivity
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Node
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: cluster_nodes
+
+    - name: Display cluster status
+      debug:
+        msg:
+          - "Connected to k3s cluster"
+          - "Nodes: {{ cluster_nodes.resources | length }}"
+          - "Ready nodes: {{ cluster_nodes.resources | selectattr('status.conditions', 'selectattr', 'type', 'equalto', 'Ready') | selectattr('status.conditions', 'selectattr', 'status', 'equalto', 'True') | list | length }}"
+
+    - name: Verify MetalLB is available
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Service
+        namespace: metallb-system
+        name: metallb-webhook-service
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: metallb_status
+      failed_when: false
+
+    - name: Warning if MetalLB not found
+      debug:
+        msg: "Warning: MetalLB not detected. LoadBalancer services may not get external IPs."
+      when: metallb_status.resources | length == 0
+
+  tasks:
+    - name: Create ByteFreezer UI namespace
+      kubernetes.core.k8s:
+        definition: "{{ lookup('file', '../k8s/namespace.yaml') | from_yaml }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+
+    - name: Apply ConfigMap with ByteFreezer Control API configuration
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '../k8s/configmap.yaml') | from_yaml_all | list }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+
+    - name: Deploy ByteFreezer UI application
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '../k8s/deployment.yaml') | from_yaml }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        wait: true
+        wait_condition:
+          type: Progressing
+          status: "True"
+        wait_timeout: 600
+
+    - name: Create LoadBalancer service with MetalLB
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '../k8s/service.yaml') | from_yaml_all | list }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+
+    - name: Create Ingress (optional)
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '../k8s/ingress.yaml') | from_yaml }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+      when: create_ingress | default(false)
+
+    - name: Wait for deployment to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: bytefreezer-ui
+        namespace: bytefreezer-ui
+        kubeconfig: "{{ kubeconfig_path }}"
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 300
+
+    - name: Get service external IP
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Service
+        name: bytefreezer-ui
+        namespace: bytefreezer-ui
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: ui_service
+
+    - name: Display deployment status
+      debug:
+        msg:
+          - "ByteFreezer UI deployed successfully!"
+          - "Namespace: bytefreezer-ui"
+          - "External IP: {{ ui_service.resources[0].status.loadBalancer.ingress[0].ip | default('Pending...') }}"
+          - "UI URL: http://{{ ui_service.resources[0].status.loadBalancer.ingress[0].ip | default(ui_external_ip) }}:3000"
+          - "Control API: {{ bytefreezer_control_service_ip }}:8082"
+          - "Image: {{ container_registry }}/bytefreezer-ui:{{ ui_version }}"
+          - "Replicas: {{ ui_replicas }}"
+
+  post_tasks:
+    - name: Test UI health endpoint
+      uri:
+        url: "http://{{ ui_service.resources[0].status.loadBalancer.ingress[0].ip | default(ui_external_ip) }}:3000/api/health"
+        method: GET
+        timeout: 10
+      register: health_check
+      failed_when: false
+      retries: 5
+      delay: 10
+
+    - name: Display health check results
+      debug:
+        msg:
+          - "Health check: {{ 'PASS' if health_check.status == 200 else 'FAIL' }}"
+          - "Response: {{ health_check.json if health_check.status == 200 else health_check.msg }}"

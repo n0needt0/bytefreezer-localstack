@@ -1,0 +1,83 @@
+# AWX Inventory for k3s cluster
+# This inventory defines the k3s cluster nodes for ByteFreezer UI deployment
+
+all:
+  children:
+    k3s_cluster:
+      children:
+        k3s_masters:
+          hosts:
+            tp1:
+              ansible_host: 192.168.86.101
+              kubernetes_role: master
+            tp2:
+              ansible_host: 192.168.86.102
+              kubernetes_role: master
+            tp3:
+              ansible_host: 192.168.86.103
+              kubernetes_role: master
+        k3s_workers:
+          hosts:
+            tp4:
+              ansible_host: 192.168.86.104
+              kubernetes_role: worker
+            tp5:
+              ansible_host: 192.168.86.105
+              kubernetes_role: worker
+            tp6:
+              ansible_host: 192.168.86.106
+              kubernetes_role: worker
+            tp7:
+              ansible_host: 192.168.86.107
+              kubernetes_role: worker
+            tp8:
+              ansible_host: 192.168.86.108
+              kubernetes_role: worker
+            tp9:
+              ansible_host: 192.168.86.109
+              kubernetes_role: worker
+            tp10:
+              ansible_host: 192.168.86.110
+              kubernetes_role: worker
+            tp11:
+              ansible_host: 192.168.86.111
+              kubernetes_role: worker
+            tp12:
+              ansible_host: 192.168.86.112
+              kubernetes_role: worker
+
+  vars:
+    # k3s cluster configuration
+    k3s_version: "v1.33.4+k3s1"
+    kubeconfig_path: "~/.kube/config"
+
+    # ByteFreezer service endpoints (update these to match your actual services)
+    bytefreezer_control_service_ip: "192.168.86.109"  # Update to actual Control API IP
+    bytefreezer_receiver_service_ip: "192.168.86.110" # Update to actual Receiver IP
+    bytefreezer_piper_service_ip: "192.168.86.111"    # Update to actual Piper IP
+    bytefreezer_packer_service_ip: "192.168.86.112"   # Update to actual Packer IP
+
+    # MetalLB configuration for UI external access
+    ui_external_ip: "192.168.86.113"                  # Available IP from MetalLB pool
+    ui_hostname: "bytefreezer-ui.local"
+
+    # Container registry settings
+    container_registry: "docker.io/bytefreezer"       # Update to your registry
+    ui_version: "latest"
+    ui_replicas: 2
+
+    # Security settings (generate these securely)
+    jwt_secret: "{{ vault_jwt_secret | default('change-this-jwt-secret') }}"
+    nextauth_secret: "{{ vault_nextauth_secret | default('change-this-nextauth-secret') }}"
+
+    # Build settings
+    ui_git_repo: "https://github.com/your-org/bytefreezer-ui.git"  # Update to your repo
+    ui_git_branch: "main"
+    cleanup_build_artifacts: true
+
+    # Optional features
+    create_ingress: false                              # Set to true if you want Ingress
+
+    # Connection settings
+    ansible_user: ubuntu                               # Update to your SSH user
+    ansible_ssh_private_key_file: ~/.ssh/id_rsa       # Update to your SSH key

@@ -28,7 +28,23 @@ data:
     # Create SNS topics for ByteFreezer services
     aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sns create-topic --name bytefreezer-alerts || true
     aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sns create-topic --name bytefreezer-notifications || true
-    
+
+    # Create PostgreSQL RDS instance for ByteFreezer
+    echo "Creating PostgreSQL RDS instance..."
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 rds create-db-instance \
+      --db-instance-identifier bytefreezer-postgres \
+      --db-instance-class db.t3.micro \
+      --engine postgres \
+      --master-username bytefreezer \
+      --master-user-password bytefreezer123 \
+      --allocated-storage 20 \
+      --db-name bytefreezer \
+      --port 5432 || true
+
+    echo "Waiting for PostgreSQL RDS instance to be available..."
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 rds wait db-instance-available \
+      --db-instance-identifier bytefreezer-postgres || true
+
     echo "LocalStack initialization complete!"
   
   aws-config: |

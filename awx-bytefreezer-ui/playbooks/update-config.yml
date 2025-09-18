@@ -1,0 +1,148 @@
+---
+- name: Update ByteFreezer UI Configuration
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    kubeconfig_path: "{{ kubeconfig_path | default('~/.kube/config') }}"
+
+    # ByteFreezer Control API connection (can be updated)
+    bytefreezer_control_service_ip: "{{ bytefreezer_control_service_ip }}"
+    bytefreezer_receiver_service_ip: "{{ bytefreezer_receiver_service_ip }}"
+    bytefreezer_piper_service_ip: "{{ bytefreezer_piper_service_ip }}"
+    bytefreezer_packer_service_ip: "{{ bytefreezer_packer_service_ip }}"
+
+    # UI external access
+    ui_external_ip: "{{ ui_external_ip }}"
+    ui_hostname: "{{ ui_hostname }}"
+
+    # Security (optional update)
+    jwt_secret: "{{ jwt_secret | default(omit) }}"
+    nextauth_secret: "{{ nextauth_secret | default(omit) }}"
+
+  pre_tasks:
+    - name: Verify deployment exists
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: bytefreezer-ui
+        namespace: bytefreezer-ui
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: existing_deployment
+      failed_when: existing_deployment.resources | length == 0
+
+    - name: Get current configuration
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: ConfigMap
+        name: bytefreezer-ui-config
+        namespace: bytefreezer-ui
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: current_config
+
+    - name: Display current Control API configuration
+      debug:
+        msg:
+          - "Current Control API: {{ current_config.resources[0].data.NEXT_PUBLIC_API_BASE_URL }}"
+          - "New Control API: http://{{ bytefreezer_control_service_ip }}:8082"
+
+  tasks:
+    - name: Update ConfigMap with new Control API configuration
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '../k8s/configmap.yaml') | from_yaml_all | list }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: config_update
+
+    - name: Update secrets if provided
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '../k8s/configmap.yaml') | from_yaml_all | selectattr('kind', 'equalto', 'Secret') | list }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+      when: jwt_secret is defined or nextauth_secret is defined
+
+    - name: Restart deployment to pick up new configuration
+      kubernetes.core.k8s:
+        api_version: apps/v1
+        kind: Deployment
+        name: bytefreezer-ui
+        namespace: bytefreezer-ui
+        kubeconfig: "{{ kubeconfig_path }}"
+        definition:
+          spec:
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+        state: present
+
+    - name: Wait for rollout to complete
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: bytefreezer-ui
+        namespace: bytefreezer-ui
+        kubeconfig: "{{ kubeconfig_path }}"
+        wait_condition:
+          type: Progressing
+          status: "True"
+        wait_timeout: 300
+
+    - name: Verify pods are running with new configuration
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: bytefreezer-ui
+        label_selectors:
+          - app.kubernetes.io/name=bytefreezer-ui
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: updated_pods
+
+    - name: Get service status
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Service
+        name: bytefreezer-ui
+        namespace: bytefreezer-ui
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: ui_service
+
+    - name: Display update results
+      debug:
+        msg:
+          - "Configuration update completed!"
+          - "Pods restarted: {{ updated_pods.resources | length }}"
+          - "All pods ready: {{ (updated_pods.resources | selectattr('status.conditions', 'selectattr', 'type', 'equalto', 'Ready') | selectattr('status.conditions', 'selectattr', 'status', 'equalto', 'True') | list | length) == (updated_pods.resources | length) }}"
+          - "External IP: {{ ui_service.resources[0].status.loadBalancer.ingress[0].ip | default('Pending...') }}"
+          - "Control API: http://{{ bytefreezer_control_service_ip }}:8082"
+
+  post_tasks:
+    - name: Test connectivity to Control API from UI perspective
+      uri:
+        url: "http://{{ bytefreezer_control_service_ip }}:8082/api/v1/system/health"
+        method: GET
+        timeout: 10
+      register: control_api_test
+      failed_when: false
+
+    - name: Display Control API connectivity test
+      debug:
+        msg:
+          - "Control API connectivity: {{ 'SUCCESS' if control_api_test.status == 200 else 'FAILED' }}"
+          - "Control API response: {{ control_api_test.json if control_api_test.status == 200 else control_api_test.msg }}"
+
+    - name: Test UI health after configuration update
+      uri:
+        url: "http://{{ ui_service.resources[0].status.loadBalancer.ingress[0].ip | default(ui_external_ip) }}:3000/api/health"
+        method: GET
+        timeout: 10
+      register: ui_health_test
+      failed_when: false
+      retries: 3
+      delay: 5
+
+    - name: Display UI health test results
+      debug:
+        msg:
+          - "UI health check: {{ 'PASS' if ui_health_test.status == 200 else 'FAIL' }}"
+          - "UI response: {{ ui_health_test.json if ui_health_test.status == 200 else ui_health_test.msg }}"

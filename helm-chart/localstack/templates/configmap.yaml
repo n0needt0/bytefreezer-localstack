@@ -36,7 +36,27 @@ data:
     aws --endpoint-url=http://{{ include "localstack.fullname" $ }}-internal.{{ $.Values.namespace.name }}.svc.cluster.local:{{ $.Values.service.internal.ports.edge }} sns create-topic --name {{ . }} || true
     {{- end }}
     {{- end }}
-    
+
+    {{- if .Values.initJob.resources.rdsInstances }}
+    # Create PostgreSQL RDS instances
+    {{- range .Values.initJob.resources.rdsInstances }}
+    echo "Creating PostgreSQL RDS instance: {{ .identifier }}..."
+    aws --endpoint-url=http://{{ include "localstack.fullname" $ }}-internal.{{ $.Values.namespace.name }}.svc.cluster.local:{{ $.Values.service.internal.ports.edge }} rds create-db-instance \
+      --db-instance-identifier {{ .identifier }} \
+      --db-instance-class {{ .instanceClass }} \
+      --engine {{ .engine }} \
+      --master-username {{ .username }} \
+      --master-user-password {{ .password }} \
+      --allocated-storage {{ .allocatedStorage }} \
+      --db-name {{ .dbName }} \
+      --port {{ .port }} || true
+
+    echo "Waiting for PostgreSQL RDS instance {{ .identifier }} to be available..."
+    aws --endpoint-url=http://{{ include "localstack.fullname" $ }}-internal.{{ $.Values.namespace.name }}.svc.cluster.local:{{ $.Values.service.internal.ports.edge }} rds wait db-instance-available \
+      --db-instance-identifier {{ .identifier }} || true
+    {{- end }}
+    {{- end }}
+
     echo "LocalStack initialization complete!"
 
   aws-config: |

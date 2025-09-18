@@ -10,11 +10,11 @@ localstack:
   
   # LocalStack environment variables
   env:
-    services: "s3,sqs,sns,dynamodb,lambda,cloudformation,iam,secretsmanager,ssm"
+    services: "s3,sqs,sns,dynamodb,lambda,cloudformation,iam,secretsmanager,ssm,rds"
     debug: "1"
     persistence: "1"
     skipInfraDownloads: "1"
-    dataDir: "/tmp/localstack/data"
+    dataDir: "/data"
   
   # Resource limits and requests
   resources:
@@ -139,6 +139,62 @@ initJob:
     snsTopics:
       - "bytefreezer-alerts"
       - "bytefreezer-notifications"
+
+    # PostgreSQL RDS instances
+    rdsInstances:
+      - identifier: "bytefreezer-postgres"
+        instanceClass: "db.t3.micro"
+        engine: "postgres"
+        username: "bytefreezer"
+        password: "bytefreezer123"
+        allocatedStorage: 20
+        dbName: "bytefreezer"
+        port: 5432
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15"
+    pullPolicy: IfNotPresent
+
+  # PostgreSQL environment variables
+  env:
+    database: "bytefreezer"
+    username: "bytefreezer"
+    password: "bytefreezer123"
+    dataDir: "/var/lib/postgresql/data/pgdata"
+
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "125m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Service configuration
+  service:
+    internal:
+      enabled: true
+      type: ClusterIP
+      port: 5432
+    external:
+      enabled: true
+      type: LoadBalancer
+      port: 5432
+      annotations:
+        metallb.universe.tf/address-pool: "localstack-pool"
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    storageClassName: "local-path"
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
 
 # Namespace configuration
 namespace:
