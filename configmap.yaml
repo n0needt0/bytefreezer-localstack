@@ -14,36 +14,20 @@ data:
     done
     echo "LocalStack is ready!"
     
-    # Create S3 buckets for ByteFreezer services
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 s3 mb s3://bytefreezer-data || true
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 s3 mb s3://bytefreezer-config || true
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 s3 mb s3://bytefreezer-logs || true
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 s3 mb s3://bytefreezer-artifacts || true
-    
-    # Create SQS queues for ByteFreezer services
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sqs create-queue --queue-name bytefreezer-events || true
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sqs create-queue --queue-name bytefreezer-dlq || true
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sqs create-queue --queue-name bytefreezer-processing || true
-    
-    # Create SNS topics for ByteFreezer services
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sns create-topic --name bytefreezer-alerts || true
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sns create-topic --name bytefreezer-notifications || true
+    # Create example S3 buckets
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 s3 mb s3://app-data || true
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 s3 mb s3://app-config || true
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 s3 mb s3://app-logs || true
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 s3 mb s3://app-artifacts || true
 
-    # Create PostgreSQL RDS instance for ByteFreezer
-    echo "Creating PostgreSQL RDS instance..."
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 rds create-db-instance \
-      --db-instance-identifier bytefreezer-postgres \
-      --db-instance-class db.t3.micro \
-      --engine postgres \
-      --master-username bytefreezer \
-      --master-user-password bytefreezer123 \
-      --allocated-storage 20 \
-      --db-name bytefreezer \
-      --port 5432 || true
+    # Create example SQS queues
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sqs create-queue --queue-name app-events || true
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sqs create-queue --queue-name app-dlq || true
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sqs create-queue --queue-name app-processing || true
 
-    echo "Waiting for PostgreSQL RDS instance to be available..."
-    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 rds wait db-instance-available \
-      --db-instance-identifier bytefreezer-postgres || true
+    # Create example SNS topics
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sns create-topic --name app-alerts || true
+    aws --endpoint-url=http://localstack.localstack.svc.cluster.local:4566 sns create-topic --name app-notifications || true
 
     echo "LocalStack initialization complete!"
   

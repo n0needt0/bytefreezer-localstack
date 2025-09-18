@@ -1,20 +1,18 @@
-# ByteFreezer LocalStack (AWS Services)
+# LocalStack on K3s/K8s
 
-AWS-compatible services using LocalStack on K3s cluster. This provides AWS service emulation for ByteFreezer applications.
-
-> **Note**: PostgreSQL has been moved to `../bytefreezer-postgres/` for better separation of concerns.
+Deploy AWS LocalStack on Kubernetes (K3s/K8s) with MetalLB LoadBalancer integration. Provides local AWS service emulation for development and testing.
 
 ## 🎯 What This Provides
 
-LocalStack emulates AWS services locally, giving you:
-- **S3**: Object storage for data, configs, logs, and artifacts
-- **SQS**: Message queues for event processing and DLQ
-- **SNS**: Pub/sub notifications and alerts
-- **DynamoDB**: NoSQL database for metadata
-- **Lambda**: Serverless functions (if needed)
+LocalStack emulates AWS services locally, providing:
+- **S3**: Object storage buckets
+- **SQS**: Message queues and dead letter queues
+- **SNS**: Pub/sub topics and notifications
+- **DynamoDB**: NoSQL database tables
+- **Lambda**: Serverless function execution
 - **IAM**: Identity and access management
 - **Secrets Manager**: Secure credential storage
-- **Systems Manager**: Configuration management
+- **Systems Manager**: Parameter store and configuration
 
 ## 🚀 Quick Start
 
@@ -37,7 +35,7 @@ This will:
 3. Create the `localstack` namespace
 4. Deploy LocalStack with persistent storage
 5. Set up internal ClusterIP and external LoadBalancer services
-6. Initialize common AWS resources for ByteFreezer
+6. Initialize example AWS resources
 7. Display connection information with LoadBalancer IPs
 
 ### Remove LocalStack
@@ -103,27 +101,27 @@ This deployment creates three service types:
 
 ## 🎯 Pre-Created Resources
 
-The deployment automatically creates these AWS resources for ByteFreezer:
+The deployment automatically creates example AWS resources:
 
 ### S3 Buckets
-- `bytefreezer-data` - Primary data storage
-- `bytefreezer-config` - Configuration files
-- `bytefreezer-logs` - Log storage
-- `bytefreezer-artifacts` - Build artifacts and packages
+- `app-data` - Application data storage
+- `app-config` - Configuration files
+- `app-logs` - Log storage
+- `app-artifacts` - Build artifacts and packages
 
 ### SQS Queues
-- `bytefreezer-events` - Event processing queue
-- `bytefreezer-dlq` - Dead letter queue for failed messages
-- `bytefreezer-processing` - Data processing pipeline queue
+- `app-events` - Event processing queue
+- `app-dlq` - Dead letter queue for failed messages
+- `app-processing` - Data processing pipeline queue
 
 ### SNS Topics
-- `bytefreezer-alerts` - System alerts and monitoring
-- `bytefreezer-notifications` - User notifications
+- `app-alerts` - System alerts and monitoring
+- `app-notifications` - User notifications
 
 ## 🔧 Using LocalStack in Your Services
 
 ### Environment Variables
-Add these environment variables to your ByteFreezer service deployments:
+Add these environment variables to your application deployments:
 
 ```yaml
 env:
@@ -183,16 +181,16 @@ export AWS_DEFAULT_REGION=us-east-1
 
 # Test S3
 aws s3 ls
-aws s3 cp /etc/hostname s3://bytefreezer-data/test.txt
-aws s3 ls s3://bytefreezer-data/
+aws s3 cp /etc/hostname s3://app-data/test.txt
+aws s3 ls s3://app-data/
 
 # Test SQS
 aws sqs list-queues
-aws sqs send-message --queue-url http://localstack.localstack.svc.cluster.local:4566/000000000000/bytefreezer-events --message-body "Test message"
+aws sqs send-message --queue-url http://localstack.localstack.svc.cluster.local:4566/000000000000/app-events --message-body "Test message"
 
 # Test SNS
 aws sns list-topics
-aws sns publish --topic-arn arn:aws:sns:us-east-1:000000000000:bytefreezer-alerts --message "Test alert"
+aws sns publish --topic-arn arn:aws:sns:us-east-1:000000000000:app-alerts --message "Test alert"
 ```
 
 ### From outside the cluster (replace NODE_IP)
@@ -261,17 +259,18 @@ kubectl logs job/localstack-init -n localstack
 - Verify node IP: `kubectl get nodes -o wide`
 - Ensure firewall allows ports 30566 and 30510
 
-## 🚀 Integration with ByteFreezer Services
+## 🚀 Integration with Applications
 
-This LocalStack deployment provides a consistent, shared AWS environment for:
+This LocalStack deployment provides a consistent, shared AWS environment for your applications:
 
-- **ByteFreezer Proxy**: S3 storage for spooled data, SQS for event queues
-- **ByteFreezer Receiver**: S3 for data ingestion, SNS for notifications
-- **ByteFreezer Piper**: DynamoDB for pipeline state, S3 for processed data
-- **ByteFreezer Control**: S3 for configurations, Secrets Manager for credentials
-- **ByteFreezer SOC**: SNS for alerts, S3 for logs and reports
+- **Data Storage**: S3 buckets for files, configurations, and logs
+- **Message Processing**: SQS queues for asynchronous processing and DLQ
+- **Notifications**: SNS topics for pub/sub messaging and alerts
+- **Database**: DynamoDB for NoSQL data storage
+- **Security**: IAM, Secrets Manager for credentials and access control
+- **Configuration**: Systems Manager for parameter storage
 
-All services can use the same LocalStack instance with the environment variables listed above, providing a unified development environment that closely mirrors production AWS services.
+All applications can use the same LocalStack instance with the environment variables listed above, providing a unified development environment that closely mirrors production AWS services.
 
 ## 📚 Additional Resources
 

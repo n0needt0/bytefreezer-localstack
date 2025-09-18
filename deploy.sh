@@ -126,20 +126,20 @@ data:
     done
     echo "LocalStack is ready!"
     
-    # Create S3 buckets for ByteFreezer services
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 s3 mb s3://bytefreezer-data || true
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 s3 mb s3://bytefreezer-config || true
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 s3 mb s3://bytefreezer-logs || true
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 s3 mb s3://bytefreezer-artifacts || true
+    # Create example S3 buckets
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 s3 mb s3://app-data || true
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 s3 mb s3://app-config || true
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 s3 mb s3://app-logs || true
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 s3 mb s3://app-artifacts || true
     
-    # Create SQS queues for ByteFreezer services
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sqs create-queue --queue-name bytefreezer-events || true
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sqs create-queue --queue-name bytefreezer-dlq || true
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sqs create-queue --queue-name bytefreezer-processing || true
+    # Create example SQS queues
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sqs create-queue --queue-name app-events || true
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sqs create-queue --queue-name app-dlq || true
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sqs create-queue --queue-name app-processing || true
     
-    # Create SNS topics for ByteFreezer services
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sns create-topic --name bytefreezer-alerts || true
-    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sns create-topic --name bytefreezer-notifications || true
+    # Create example SNS topics
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sns create-topic --name app-alerts || true
+    aws --endpoint-url=http://localstack-internal.localstack.svc.cluster.local:4566 sns create-topic --name app-notifications || true
     
     echo "LocalStack initialization complete!"'
 
@@ -155,9 +155,9 @@ kubectl wait --for=condition=complete --timeout=120s job/localstack-init -n loca
 echo "✅ LocalStack initialization complete!"
 echo ""
 echo "🎯 Created AWS resources:"
-echo "  • S3 Buckets: bytefreezer-data, bytefreezer-config, bytefreezer-logs, bytefreezer-artifacts"
-echo "  • SQS Queues: bytefreezer-events, bytefreezer-dlq, bytefreezer-processing"
-echo "  • SNS Topics: bytefreezer-alerts, bytefreezer-notifications"
+echo "  • S3 Buckets: app-data, app-config, app-logs, app-artifacts"
+echo "  • SQS Queues: app-events, app-dlq, app-processing"
+echo "  • SNS Topics: app-alerts, app-notifications"
 echo ""
 echo "🧪 Test connection:"
 echo "  kubectl run aws-cli --rm -i --tty --image=amazon/aws-cli:latest -- /bin/bash"

@@ -146,7 +146,7 @@ initJob:
 - **All services**: Complete LocalStack service set
 - **Large storage**: 50Gi with fast storage class
 - **All endpoints**: Internal + both LoadBalancers
-- **Full resources**: Complete ByteFreezer resource set
+- **Full resources**: Complete application resource set
 - **Production features**: Security context, monitoring
 
 ### Custom Values
@@ -312,15 +312,15 @@ kubectl logs -l app.kubernetes.io/name=localstack -n localstack
 - Ensure network interface name is correct
 - Check firewall rules for LoadBalancer IPs
 
-## 🎯 Integration with ByteFreezer
+## 🎯 Integration with Applications
 
-This chart is designed for ByteFreezer development environments. Use the appropriate environment configuration:
+This chart is designed for development environments. Use the appropriate environment configuration:
 
 - **Development**: `--environment dev` for lightweight local development
 - **Production**: `--environment prod` for full-featured testing
 - **CI/CD**: Custom values with specific resource limits
 
-All ByteFreezer services can connect using the internal service endpoint for optimal performance within the cluster.
+All services can connect using the internal service endpoint for optimal performance within the cluster.
 
 ## 📚 Helm Chart Values Reference
 

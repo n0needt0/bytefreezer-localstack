@@ -39,26 +39,26 @@ metallb:
     interfaces:
       - "eth0"
 
-# Full ByteFreezer resource initialization
+# Full application resource initialization
 initJob:
   enabled: true
   resources:
     s3Buckets:
-      - "bytefreezer-data"
-      - "bytefreezer-config"
-      - "bytefreezer-logs"
-      - "bytefreezer-artifacts"
-      - "bytefreezer-backups"
-      - "bytefreezer-reports"
+      - "app-data"
+      - "app-config"
+      - "app-logs"
+      - "app-artifacts"
+      - "app-backups"
+      - "app-reports"
     sqsQueues:
-      - "bytefreezer-events"
-      - "bytefreezer-dlq"
-      - "bytefreezer-processing"
-      - "bytefreezer-analytics"
+      - "app-events"
+      - "app-dlq"
+      - "app-processing"
+      - "app-analytics"
     snsTopics:
-      - "bytefreezer-alerts"
-      - "bytefreezer-notifications"
-      - "bytefreezer-webhooks"
+      - "app-alerts"
+      - "app-notifications"
+      - "app-webhooks"
 
 # Production features
 podDisruptionBudget:

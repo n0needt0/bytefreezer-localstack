@@ -80,7 +80,7 @@ The chart creates three service endpoints:
 ### Default (`values.yaml`)
 - Balanced configuration for general use
 - All services enabled with moderate resources
-- Complete ByteFreezer resource initialization
+- Complete application resource initialization
 - Production features available but can be disabled
 
 ### Development (`values-dev.yaml`)
@@ -110,7 +110,7 @@ The chart creates three service endpoints:
 ### AWS Resource Management
 - Post-install job creates AWS resources automatically
 - Configurable S3 buckets, SQS queues, SNS topics
-- ByteFreezer-specific resource sets included
+- Application-specific resource sets included
 - Helm hooks ensure proper initialization order
 
 ### Production Features
@@ -246,13 +246,13 @@ aws s3 ls
 | **Validation** | Manual testing | Built-in validation |
 | **Documentation** | Separate documentation | Self-documenting via templates |
 
-## 🎯 Integration with ByteFreezer
+## 🎯 Integration with Applications
 
-The Helm chart is specifically designed for ByteFreezer development workflows:
+The Helm chart is specifically designed for development workflows:
 
 ### Service Integration
 ```yaml
-# In your ByteFreezer service deployments
+# In your service deployments
 env:
 - name: AWS_ENDPOINT_URL
   value: "http://localstack-internal.localstack.svc.cluster.local:4566"
@@ -286,7 +286,7 @@ service:
 ✅ **Easy Deployment**: One command deployment with environment selection  
 ✅ **Production Ready**: Includes HPA, PDB, monitoring, security contexts  
 ✅ **Network Flexible**: Works with any MetalLB network configuration  
-✅ **ByteFreezer Optimized**: Pre-configured for ByteFreezer service integration  
+✅ **Application Optimized**: Pre-configured for service integration  
 ✅ **Multi-Environment**: Development and production configurations included  
 ✅ **Maintainable**: Helm's upgrade/rollback capabilities  
 ✅ **Validated**: Built-in testing and validation scripts  

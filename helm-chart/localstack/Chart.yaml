@@ -16,6 +16,7 @@ keywords:
 maintainers:
   - name: ByteFreezer Team
     email: dev@bytefreezer.com
+    url: https://bytefreezer.com
 annotations:
   category: Development Tools
   licenses: Apache-2.0
