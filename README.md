@@ -279,3 +279,16 @@ All applications can use the same LocalStack instance with the environment varia
 - [LocalStack Documentation](https://docs.localstack.cloud/)
 - [AWS CLI with LocalStack](https://docs.localstack.cloud/integrations/aws-cli/)
 - [LocalStack Pro Features](https://docs.localstack.cloud/getting-started/pro/)
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+### Attribution
+
+This project contains configuration and deployment scripts for LocalStack:
+- **LocalStack** - Copyright (c) 2017-2025 LocalStack maintainers and contributors
+- **Original source**: https://github.com/localstack/localstack
+- **License**: Apache License 2.0
+
+LocalStack is a trademark of LocalStack GmbH. AWS and the AWS logos are trademarks of Amazon.com, Inc. or its affiliates. This project provides deployment configurations and is not affiliated with or endorsed by LocalStack GmbH or Amazon Web Services.

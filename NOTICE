@@ -1,0 +1,17 @@
+LocalStack K3s/K8s Deployment
+Copyright (c) 2024 ByteFreezer Team
+
+This project contains configuration and deployment scripts for LocalStack,
+which is a product of LocalStack maintainers and contributors.
+
+This work is based on LocalStack:
+- LocalStack - Copyright (c) 2017-2025 LocalStack maintainers and contributors
+- LocalStack - Copyright (c) 2016 Atlassian and others
+- Original LocalStack source: https://github.com/localstack/localstack
+- LocalStack License: Apache License 2.0
+
+LocalStack is a trademark of LocalStack GmbH.
+AWS and the AWS logos are trademarks of Amazon.com, Inc. or its affiliates.
+
+This project provides deployment configurations and is not affiliated with
+or endorsed by LocalStack GmbH or Amazon Web Services.
