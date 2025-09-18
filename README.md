@@ -1,5 +1,7 @@
 # LocalStack on K3s/K8s
 
+This project is a modified fork of AWS LocalStack assembled and provided by ByteFreezer team. ByteFreezer is an open-source, scalable enterprise-grade data lake platform. For more info see: [bytefreezer.com](https://bytefreezer.com)
+
 Deploy AWS LocalStack on Kubernetes (K3s/K8s) with MetalLB LoadBalancer integration. Provides local AWS service emulation for development and testing.
 
 ## 🎯 What This Provides
